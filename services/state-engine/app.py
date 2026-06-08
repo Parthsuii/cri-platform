@@ -4,7 +4,7 @@ import hashlib
 import json
 from fastapi import FastAPI, Body
 from pydantic import BaseModel
-from packages.utils.service_utils import setup_service
+from packages.shared.service_utils import setup_service
 
 app, logger, metrics = setup_service("state_engine")
 

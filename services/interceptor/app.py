@@ -5,7 +5,7 @@ import urllib.request
 from fastapi import FastAPI, Body, HTTPException
 from pydantic import BaseModel
 from packages.contracts.action import CRIAction
-from packages.utils.service_utils import setup_service
+from packages.shared.service_utils import setup_service
 
 app, logger, metrics = setup_service("interceptor")
 

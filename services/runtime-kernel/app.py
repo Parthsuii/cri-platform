@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from packages.contracts.action import CRIAction
 from packages.adapters.adapter import GenericAdapter
 from packages.events.event import EventFactory
-from packages.utils.service_utils import setup_service
+from packages.shared.service_utils import setup_service
 
 app, logger, metrics = setup_service("runtime_kernel")
 
