@@ -1,0 +1,11 @@
+{
+  "topics": [
+    { "name": "runtime-events", "partitions": 3, "replication_factor": 1, "retention_ms": 604800000 },
+    { "name": "telemetry-events", "partitions": 3, "replication_factor": 1, "retention_ms": 604800000 },
+    { "name": "rollback-events", "partitions": 3, "replication_factor": 1, "retention_ms": 604800000 },
+    { "name": "verification-events", "partitions": 3, "replication_factor": 1, "retention_ms": 604800000 },
+    { "name": "policy-events", "partitions": 3, "replication_factor": 1, "retention_ms": 604800000 },
+    { "name": "runtime-events-dlq", "partitions": 1, "replication_factor": 1, "retention_ms": 1209600000 }
+  ]
+}
+

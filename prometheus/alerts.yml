@@ -1,0 +1,18 @@
+groups:
+  - name: cri-runtime
+    rules:
+      - alert: CRIRuntimeTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CRI runtime scrape target is down"
+      - alert: CRIHighPolicyViolations
+        expr: increase(cri_policy_violations_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRI policy violations exceeded threshold"
+

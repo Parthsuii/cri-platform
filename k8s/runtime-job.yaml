@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cri-runtime-agent
+  namespace: cri-runtime
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: cri-runtime-runner
+      restartPolicy: Never
+      containers:
+        - name: cri-runtime
+          image: cri-runtime:latest
+          imagePullPolicy: IfNotPresent
+          command: ["python", "main.py"]
+          args: ["--cognition-os", "run echo from-kubernetes"]
+          envFrom:
+            - configMapRef:
+                name: cri-runtime-config

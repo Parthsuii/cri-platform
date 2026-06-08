@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: cri-runtime
+    orgId: 1
+    folder: CRI Runtime
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

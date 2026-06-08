@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cri-runtime-config
+  namespace: cri-runtime
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  TELEMETRY_WAL_PATH: "/var/log/cri/telemetry_crash.log"

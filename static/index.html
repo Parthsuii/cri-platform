@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CRI Runtime Console</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <canvas id="topology-canvas" aria-hidden="true"></canvas>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">
+            <span>CRI</span>
+          </div>
+          <div>
+            <h1>Runtime Console</h1>
+            <p>Command fabric online</p>
+          </div>
+        </div>
+        <nav class="nav-list" aria-label="Main navigation">
+          <a href="#run" class="active"><span>01</span> Run Task</a>
+          <a href="#history"><span>02</span> History</a>
+          <a href="#trace"><span>03</span> Trace</a>
+          <a href="#fabric"><span>04</span> Fabric</a>
+          <a href="#compiler"><span>05</span> AI Compiler</a>
+        </nav>
+        <div class="node-rail" aria-label="Runtime nodes">
+          <div><span></span> Planner</div>
+          <div><span></span> Policy</div>
+          <div><span></span> Sandbox</div>
+          <div><span></span> Verify</div>
+        </div>
+        <div class="service-card">
+          <span class="status-dot" id="health-dot"></span>
+          <div>
+            <strong id="health-label">Checking</strong>
+            <small>API health</small>
+          </div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Infrastructure as a Service</p>
+            <h2>CRI Runtime</h2>
+            <p class="subtitle">Run, verify, replay, rollback, and deploy agent work from one command surface.</p>
+          </div>
+          <div class="topbar-actions">
+            <a class="link-button" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+            <button id="refresh-button" type="button">Refresh</button>
+          </div>
+        </header>
+
+        <section class="metrics-grid" aria-label="Service metrics">
+          <div class="metric">
+            <span>Tasks</span>
+            <strong id="metric-tasks">0</strong>
+            <small>submitted</small>
+          </div>
+          <div class="metric">
+            <span>Passed</span>
+            <strong id="metric-passed">0</strong>
+            <small>verified</small>
+          </div>
+          <div class="metric">
+            <span>Checkpoints</span>
+            <strong id="metric-checkpoints">0</strong>
+            <small>restorable</small>
+          </div>
+          <div class="metric">
+            <span>Trace Events</span>
+            <strong id="metric-trace">0</strong>
+            <small>audit trail</small>
+          </div>
+          <div class="metric">
+            <span>Compilations</span>
+            <strong id="metric-compilations">0</strong>
+            <small>run</small>
+          </div>
+          <div class="metric">
+            <span>Compiler Success</span>
+            <strong id="metric-comp-success">100%</strong>
+            <small>rate</small>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <form id="task-form" class="panel run-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Submit</p>
+                <h3 id="run">Runtime Task</h3>
+              </div>
+              <select id="mode-input" aria-label="Runtime mode">
+                <option value="cognition_os">Cognition OS</option>
+                <option value="agent">Agent</option>
+              </select>
+            </div>
+            <textarea id="task-input" rows="5" placeholder="run echo hello" required>run echo hello</textarea>
+            <div class="mode-strip" aria-label="Runtime pipeline">
+              <span>Plan</span>
+              <span>Route</span>
+              <span>Execute</span>
+              <span>Verify</span>
+            </div>
+            <div class="form-actions">
+              <button type="submit">Run Task</button>
+              <button id="sample-risk" type="button" class="secondary">Sandbox Sample</button>
+            </div>
+          </form>
+
+          <section class="panel result-panel" aria-live="polite">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Latest</p>
+                <h3>Execution Result</h3>
+              </div>
+              <span id="latest-status" class="badge">Idle</span>
+            </div>
+            <pre id="result-output">Submit a task to see the full response.</pre>
+          </section>
+        </section>
+
+        <section class="content-grid">
+          <form id="compiler-form" class="panel run-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Compile</p>
+                <h3 id="compiler">AI Application Compiler</h3>
+              </div>
+            </div>
+            <textarea id="compiler-input" rows="5" placeholder="Build a CRM with login and contacts" required>Build a CRM with login and contacts</textarea>
+            <div class="mode-strip compiler-strip" aria-label="Compiler pipeline">
+              <span id="step-intent">Intent</span>
+              <span id="step-architecture">Architecture</span>
+              <span id="step-schema">Schema</span>
+              <span id="step-validation">Validation</span>
+              <span id="step-repair">Repair</span>
+              <span id="step-runtime">Verifier</span>
+            </div>
+            <div class="form-actions">
+              <button type="submit">Compile Application</button>
+            </div>
+          </form>
+
+          <section class="panel result-panel" aria-live="polite">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Output</p>
+                <h3>Compilation Results</h3>
+              </div>
+              <span id="compiler-status" class="badge">Idle</span>
+            </div>
+            <div class="compiler-results-container" style="display:none;" id="compiler-results">
+              <div class="compiler-tabs">
+                <button type="button" class="tab-btn active" data-tab="tab-intent">Intent</button>
+                <button type="button" class="tab-btn" data-tab="tab-arch">Architecture</button>
+                <button type="button" class="tab-btn" data-tab="tab-db">Database</button>
+                <button type="button" class="tab-btn" data-tab="tab-api">API</button>
+                <button type="button" class="tab-btn" data-tab="tab-ui">UI</button>
+                <button type="button" class="tab-btn" data-tab="tab-auth">Auth</button>
+                <button type="button" class="tab-btn" data-tab="tab-biz">Business</button>
+                <button type="button" class="tab-btn" data-tab="tab-val">Validation</button>
+                <button type="button" class="tab-btn" data-tab="tab-rep">Repair</button>
+                <button type="button" class="tab-btn" data-tab="tab-run">Verify</button>
+              </div>
+              <div class="tab-content" id="tab-intent"><pre id="out-intent"></pre></div>
+              <div class="tab-content style-hide" id="tab-arch"><pre id="out-arch"></pre></div>
+              <div class="tab-content style-hide" id="tab-db"><pre id="out-db"></pre></div>
+              <div class="tab-content style-hide" id="tab-api"><pre id="out-api"></pre></div>
+              <div class="tab-content style-hide" id="tab-ui"><pre id="out-ui"></pre></div>
+              <div class="tab-content style-hide" id="tab-auth"><pre id="out-auth"></pre></div>
+              <div class="tab-content style-hide" id="tab-biz"><pre id="out-biz"></pre></div>
+              <div class="tab-content style-hide" id="tab-val"><pre id="out-val"></pre></div>
+              <div class="tab-content style-hide" id="tab-rep"><pre id="out-rep"></pre></div>
+              <div class="tab-content style-hide" id="tab-run"><pre id="out-run"></pre></div>
+            </div>
+            <pre id="compiler-output">Submit a prompt to compile.</pre>
+          </section>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <section class="panel" id="history">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Operations</p>
+                <h3>Task History</h3>
+              </div>
+            </div>
+            <div id="task-list" class="task-list"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Recovery</p>
+                <h3>Rollback</h3>
+              </div>
+            </div>
+            <div class="rollback-box">
+              <input id="checkpoint-input" placeholder="checkpoint id" />
+              <button id="rollback-button" type="button">Restore</button>
+            </div>
+            <pre id="rollback-output">No rollback requested.</pre>
+          </section>
+        </section>
+
+        <section class="content-grid lower-grid">
+          <section class="panel" id="trace">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Audit</p>
+                <h3>Trace Replay</h3>
+              </div>
+              <button id="trace-button" type="button" class="secondary">Load Trace</button>
+            </div>
+            <pre id="trace-output">Trace events will appear here.</pre>
+          </section>
+
+          <section class="panel" id="fabric">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Deployment</p>
+                <h3>Kubernetes Fabric</h3>
+              </div>
+            </div>
+            <div id="k8s-list" class="manifest-list"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
