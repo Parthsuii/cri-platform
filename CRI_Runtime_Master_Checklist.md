@@ -1,201 +1,357 @@
 # CRI Platform
 
-# Master Build Specification
+# Detailed Build Plan & Implementation Specification
 
-## Cognition Runtime Infrastructure
-
-### End-to-End Implementation Blueprint
-
-Version: 1.0
-
-Audience:
-
-* AI Coding Agents
-* Platform Engineers
-* Founding Engineers
+## Version 1.0
 
 ---
 
-# Executive Summary
+# 1. Executive Summary
 
-CRI (Cognition Runtime Infrastructure) is a runtime operating layer for autonomous systems.
+## Objective
 
-It is NOT:
+Build CRI (Cognition Runtime Infrastructure), a runtime operating layer that sits between autonomous systems and production environments.
 
-* an agent framework
-* a planner
-* a reasoning engine
-* a memory framework
+The platform provides:
 
-It IS:
+* Action Interception
+* Risk Classification
+* Telemetry
+* Sandbox Execution
+* Verification
+* Rollback
+* Policy Enforcement
+* State Tracking
+* Observability
 
-* execution control
-* governance
-* telemetry
-* verification
-* rollback
-* state tracking
-* observability
+CRI is infrastructure.
 
-The goal is to create infrastructure that sits between autonomous systems and production environments.
+It is not:
+
+* an LLM
+* an Agent Framework
+* a Planning System
+* a Memory System
+* a Workflow Engine
 
 ---
 
-# System Architecture
+# 2. Product Vision
+
+## Current State
 
 ```text
-Agents
-│
-├── LangGraph
-├── OpenAI Agents
-├── AutoGen
-├── OpenHands
-└── Custom Agents
-          │
-          ▼
+Agent
+ ↓
+Production System
+```
 
-+----------------------------------+
-|          CRI Platform            |
-+----------------------------------+
+Problems:
 
-Runtime Kernel
+* No visibility
+* No rollback
+* No verification
+* No governance
+* No audit trail
 
-Adapter Framework
+---
 
-Interceptor Engine
+## Future State
 
-Risk Engine
+```text
+Agent
+ ↓
+CRI Runtime
+ ↓
+Production System
+```
 
-Telemetry Engine
+Every action becomes:
 
-Sandbox Engine
+* observable
+* verifiable
+* recoverable
+* governed
 
-Verification Engine
+---
 
-Rollback Engine
+# 3. Core Platform Principles
 
-Policy Engine
+## Principle 1
 
-State Engine
+No action executes without interception.
 
-API Layer
+## Principle 2
 
-+----------------------------------+
+Everything emits telemetry.
 
-          │
-          ▼
+## Principle 3
 
-Kafka Event Backbone
+Every mutation must support recovery.
 
-          │
-          ▼
+## Principle 4
 
-PostgreSQL
-Qdrant
-Object Storage
+Verification is mandatory.
 
-          │
-          ▼
+## Principle 5
 
-Grafana
-Prometheus
-Dashboard
+Agents are plugins.
+
+CRI is the platform.
+
+---
+
+# 4. High-Level Architecture
+
+```text
+                    AGENTS
+                        │
+      ┌─────────────────┼─────────────────┐
+      │                 │                 │
+
+  LangGraph       OpenAI Agents      AutoGen
+
+      │                 │                 │
+      └─────────────────┼─────────────────┘
+                        │
+
+                 Adapter Layer
+
+                        │
+
+                Runtime Kernel
+
+                        │
+
+                 Interceptor
+
+                        │
+
+                  Risk Engine
+
+                        │
+
+               Execution Router
+
+          ┌─────────────┴─────────────┐
+
+          ▼                           ▼
+
+    Direct Runtime             Sandbox Runtime
+
+          │                           │
+
+          └─────────────┬─────────────┘
+
+                        ▼
+
+                Verification
+
+                        ▼
+
+                  Rollback
+
+                        ▼
+
+                 Telemetry
+
+                        ▼
+
+                     Kafka
+
+                        ▼
+
+          PostgreSQL / Qdrant / S3
+
+                        ▼
+
+                 Dashboard
 ```
 
 ---
 
-# Repository Structure
+# 5. Technology Stack
+
+## Backend
+
+* Python 3.12
+* FastAPI
+* SQLAlchemy
+* Pydantic
+
+## Messaging
+
+* Kafka
+
+## Storage
+
+* PostgreSQL
+* Qdrant
+* MinIO
+
+## Execution
+
+* Docker
+* Kubernetes
+
+## Observability
+
+* OpenTelemetry
+* Grafana
+* Prometheus
+
+---
+
+# 6. Repository Structure
 
 ```text
 cri-platform/
 
 apps/
+
 services/
+│
+├── api-gateway/
+├── runtime-kernel/
+├── interceptor/
+├── risk-engine/
+├── telemetry/
+├── sandbox/
+├── verification/
+├── rollback/
+├── policy/
+├── state-engine/
+
 packages/
+│
+├── contracts/
+├── events/
+├── adapters/
+├── shared/
+
 deployment/
+│
+├── docker/
+├── kubernetes/
+
 tests/
+
 docs/
-
-services/
-├── runtime-kernel
-├── interceptor
-├── risk-engine
-├── telemetry
-├── sandbox
-├── verification
-├── rollback
-├── policy
-├── state
-└── api
-
-packages/
-├── contracts
-├── events
-├── adapters
-└── shared
 ```
 
 ---
 
-# Phase 1 — Runtime Foundation
+# 7. Phase 1 — Runtime Foundation
 
-## Objective
+## Goal
 
-Build the platform core.
+Build the smallest runtime capable of receiving actions.
 
-### Deliverables
+---
 
-* Runtime Kernel
-* Adapter Framework
-* Canonical Action Model
+## Runtime Kernel
 
-### Runtime Kernel Responsibilities
+### Responsibilities
 
-* action orchestration
-* lifecycle management
-* service registration
-* routing
+* Action lifecycle
+* Service discovery
+* Routing
+* Adapter registration
 
-### Canonical Action Schema
+### Core Interface
+
+```python
+class RuntimeKernel:
+
+    async def execute(
+        self,
+        action: CRIAction
+    ):
+        pass
+```
+
+---
+
+## Canonical Action Contract
 
 ```python
 class CRIAction:
+
     action_id: str
+
     trace_id: str
+
     agent_id: str
+
     action_type: str
+
     payload: dict
+
     metadata: dict
+
+    created_at: datetime
 ```
-
-### APIs
-
-```http
-POST /actions
-GET /health
-GET /metrics
-```
-
-### Acceptance Criteria
-
-* action accepted
-* action normalized
-* action routed
 
 ---
 
-# Phase 2 — Interceptor Platform
+## APIs
 
-## Objective
+### Submit Action
 
-Intercept all actions.
+```http
+POST /v1/actions
+```
 
-### Pipeline
+Request:
+
+```json
+{
+  "agent_id": "agent-1",
+  "action_type": "shell",
+  "payload": {
+    "command": "pip install requests"
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "action_id": "uuid",
+  "trace_id": "uuid"
+}
+```
+
+---
+
+## Phase 1 Checklist
+
+* [x] Runtime Kernel
+* [x] Action Contract
+* [x] API Gateway
+* [x] Generic Adapter
+* [x] Health Endpoint
+* [x] Metrics Endpoint
+
+Acceptance:
+
+* Action accepted and stored.
+
+---
+
+# 8. Phase 2 — Interceptor Platform
+
+## Goal
+
+Nothing bypasses CRI.
+
+---
+
+## Pipeline
 
 ```text
-Agent
- ↓
-Adapter
+Action
  ↓
 Interceptor
  ↓
@@ -204,11 +360,30 @@ Risk Engine
 Execution Router
 ```
 
-### Components
+---
 
-* Middleware Engine
-* Request Normalizer
-* Execution Router
+## Middleware Architecture
+
+```python
+class Middleware:
+
+    async def process(
+        self,
+        action
+    ):
+        pass
+```
+
+Middleware Types:
+
+* Authentication
+* Telemetry
+* Policy
+* Risk
+
+---
+
+## Risk Engine
 
 ### Risk Levels
 
@@ -219,7 +394,7 @@ HIGH
 CRITICAL
 ```
 
-### Rule Engine
+### Policy Example
 
 ```yaml
 deny:
@@ -228,22 +403,45 @@ deny:
 
 sandbox:
   - pip install
-  - deployment
 ```
-
-### Acceptance Criteria
-
-* 100% interception coverage
 
 ---
 
-# Phase 3 — Telemetry Platform
+## Phase 2 Checklist
 
-## Objective
+* [x] Interceptor
+* [x] Middleware Engine
+* [x] Risk Engine
+* [x] Execution Router
 
-Everything emits telemetry.
+Acceptance:
 
-### Event Types
+* Every action intercepted.
+
+---
+
+# 9. Phase 3 — Telemetry Platform
+
+## Goal
+
+Everything becomes telemetry.
+
+---
+
+## Event Schema
+
+```json
+{
+  "event_id": "uuid",
+  "trace_id": "uuid",
+  "event_type": "ACTION_EXECUTED",
+  "timestamp": "ISO8601"
+}
+```
+
+---
+
+## Event Types
 
 * ACTION_PROPOSED
 * ACTION_EXECUTED
@@ -251,397 +449,207 @@ Everything emits telemetry.
 * CHECKPOINT_CREATED
 * ROLLBACK_TRIGGERED
 * POLICY_VIOLATION
-* STATE_UPDATED
-
-### Event Schema
-
-```json
-{
-  "event_id":"uuid",
-  "trace_id":"uuid",
-  "agent_id":"agent-1",
-  "event_type":"ACTION_EXECUTED",
-  "timestamp":"ISO8601"
-}
-```
-
-### Database
-
-```sql
-events
-traces
-actions
-```
-
-### Acceptance Criteria
-
-* all actions traceable
 
 ---
 
-# Phase 4 — Sandbox Platform
+## PostgreSQL Schema
 
-## Objective
+```sql
+CREATE TABLE events (
+    event_id UUID PRIMARY KEY,
+    trace_id UUID,
+    event_type TEXT,
+    payload JSONB,
+    created_at TIMESTAMP
+);
+```
 
-Execute risky actions safely.
+---
 
-### Execution Flow
+## Phase 3 Checklist
+
+* [x] Event Factory
+* [x] Event Validator
+* [x] Event Store
+* [x] Trace System
+
+Acceptance:
+
+* Complete action replay.
+
+---
+
+# 10. Phase 4 — Sandbox Platform
+
+## Goal
+
+Safe execution.
+
+---
+
+## Docker Sandbox
+
+Requirements:
+
+* Ephemeral containers
+* CPU limits
+* Memory limits
+* Filesystem isolation
+
+---
+
+## Execution Flow
 
 ```text
 Action
  ↓
 Sandbox
  ↓
-Verification
+Execution
  ↓
-Commit
+Result
 ```
-
-### Docker Requirements
-
-* ephemeral containers
-* filesystem isolation
-* resource controls
-* network restrictions
-
-### Resource Limits
-
-```yaml
-cpu: 1
-memory: 1Gi
-network: restricted
-```
-
-### Acceptance Criteria
-
-* isolated execution working
 
 ---
 
-# Phase 5 — Verification Platform
+## Phase 4 Checklist
 
-## Objective
+* [x] Container Manager
+* [x] Sandbox Executor
+* [x] Resource Controls
+
+Acceptance:
+
+* Risky actions isolated.
+
+---
+
+# 11. Phase 5 — Verification Platform
+
+## Goal
 
 Validate outcomes.
 
-### Verification Types
+Checks:
 
-* build verification
-* test verification
-* dependency verification
-* file verification
+* Build
+* Tests
+* Dependencies
+* Artifacts
 
-### Decision States
+Decision States:
 
-```text
-PASS
-FAIL
-RETRY
-ROLLBACK
-```
+* PASS
+* FAIL
+* RETRY
+* ROLLBACK
 
-### Acceptance Criteria
+Checklist:
 
-* verification determines execution outcome
+* [x] Verification Service
+* [x] Build Validator
+* [x] Test Runner
 
 ---
 
-# Phase 6 — Rollback Platform
+# 12. Phase 6 — Rollback Platform
 
-## Objective
+Goal:
 
 Recover safely.
 
-### Components
+Components:
 
-Checkpoint Manager
+* Checkpoint Manager
+* Rollback Manager
 
-Rollback Manager
+Checklist:
 
-### Workflow
-
-```text
-Checkpoint
- ↓
-Execution
- ↓
-Failure
- ↓
-Rollback
-```
-
-### Storage
-
-Object Storage:
-
-* snapshots
-* filesystem states
-
-### Acceptance Criteria
-
-* rollback restores previous state
+* [x] Snapshot Creation
+* [x] Snapshot Restore
+* [x] Rollback API
 
 ---
 
-# Phase 7 — Kafka Event Backbone
+# 13. Phase 7 — Kafka Backbone
 
-## Objective
+Topics:
 
-Distributed event streaming.
+* runtime-events
+* verification-events
+* rollback-events
+* policy-events
 
-### Topics
+Checklist:
 
-```text
-runtime-events
-telemetry-events
-verification-events
-rollback-events
-policy-events
-```
-
-### Components
-
-* Producer SDK
-* Consumer SDK
-* Schema Registry
-
-### Acceptance Criteria
-
-* replay supported
-* consumers operational
+* [x] Kafka Cluster
+* [x] Producers
+* [x] Consumers
 
 ---
 
-# Phase 8 — Policy Platform
+# 14. Phase 8 — Policy Platform
 
-## Objective
+Policy Actions:
 
-Govern execution.
+* ALLOW
+* DENY
+* SANDBOX
+* APPROVAL_REQUIRED
 
-### Policy Actions
+Checklist:
 
-```text
-ALLOW
-DENY
-SANDBOX
-APPROVAL_REQUIRED
-```
-
-### Example
-
-```yaml
-rules:
-  - action: deployment
-    approval_required: true
-```
-
-### Acceptance Criteria
-
-* policies enforced consistently
+* [x] Policy Engine
+* [x] Enforcement Engine
 
 ---
 
-# Phase 9 — State Engine
+# 15. Phase 9 — State Engine
 
-## Objective
-
-Track runtime state.
-
-### Components
+Components:
 
 * Snapshot Service
 * Hash Service
 * Lineage Service
 
-### State Model
+Checklist:
 
-```python
-class RuntimeState:
-    state_id: str
-    parent_state_id: str
-    hash: str
-```
-
-### Future
-
-* contradiction detection
-* semantic search
-
-### Acceptance Criteria
-
-* state evolution tracked
+* [x] State Hashing
+* [x] State Lineage
+* [x] State Persistence
 
 ---
 
-# Phase 10 — Storage Layer
+# 16. Phase 10 — Enterprise Platform
 
-## PostgreSQL
-
-Tables
-
-```sql
-events
-actions
-traces
-policies
-checkpoints
-```
-
-## Qdrant
-
-Collections
-
-```text
-semantic_states
-contradictions
-```
-
-## Object Storage
-
-```text
-snapshots
-artifacts
-logs
-```
-
----
-
-# Phase 11 — Observability Platform
-
-## OpenTelemetry
-
-* traces
-* metrics
-* logs
-
-## Grafana
-
-Dashboards
-
-* Runtime Explorer
-* Trace Explorer
-* Rollback Explorer
-* Policy Explorer
-
-### Acceptance Criteria
-
-* complete visibility
-
----
-
-# Phase 12 — Enterprise Platform
-
-## Security
+Features:
 
 * RBAC
-* OAuth2
-* API Keys
+* SSO
 * Audit Logs
-* Secret Management
+* Multi-Tenancy
 
-## Multi-Tenancy
+Checklist:
 
-* tenant isolation
-* quotas
-* billing hooks
-
-## Reliability
-
-* HA deployment
-* backups
-* disaster recovery
-
----
-
-# Phase 13 — Deployment Platform
-
-## Development
-
-Docker Compose
-
-## Staging
-
-Kubernetes
-
-## Production
-
-Kubernetes + Helm
-
-### Components
-
-* API Gateway
-* Runtime Services
-* Kafka
-* PostgreSQL
-* Qdrant
-* Grafana
-* Prometheus
-
----
-
-# Testing Strategy
-
-## Unit Tests
-
-Target:
-
-80%+
-
-## Integration Tests
-
-* action flow
-* sandbox flow
-* rollback flow
-
-## Chaos Tests
-
-* Kafka failure
-* DB failure
-* Sandbox failure
-
----
-
-# CI/CD
-
-## GitHub Actions
-
-Stages:
-
-```text
-Lint
-Test
-Build
-Security Scan
-Docker Build
-Deploy
-```
+* [x] Authentication
+* [x] Authorization
+* [x] Tenant Isolation
 
 ---
 
 # Definition of Done
 
-CRI MVP is complete when:
+The platform is complete when:
 
-* Any agent can connect via adapter
-* Every action is intercepted
-* Every action emits telemetry
-* Risk engine classifies actions
-* Sandbox executes risky actions
-* Verification validates results
-* Rollback restores state
-* Kafka streams events
-* Policies govern execution
-* State engine tracks lineage
-* Observability provides replay
+* Any agent can attach through an adapter.
+* Every action is intercepted.
+* Every action emits telemetry.
+* Risk is classified.
+* Risky actions execute in sandbox.
+* Outcomes are verified.
+* Failures are recoverable.
+* Policies are enforced.
+* Runtime state is tracked.
+* Full observability is available.
 
-without modifying the agent's internal reasoning system.
-
----
-
-# Final Goal
-
-CRI becomes the runtime operating system for autonomous systems.
-
-Infrastructure for agents.
-
-Not another agent framework.
+CRI becomes the runtime operating layer for autonomous systems.
