@@ -35,3 +35,51 @@ Infrastructure cross-check:
 - Kafka topic specs are in `kafka-topics.json` and `cri_runtime/topics.py`.
 - PostgreSQL runtime tables are initialized by `postgres/init/002_runtime_tables.sql`.
 - Kubernetes quota, network policy, and RBAC manifests are under `k8s/`.
+
+---
+
+## Connecting External Agents to CRI
+
+Other developers can connect their autonomous agents to the CRI Platform using either the Python SDK or the REST API.
+
+### Option 1: Using the Python SDK
+
+Import the runtime client, attach your agent, and dispatch actions through the CRI gateway to automatically leverage the policy, risk classification, and sandboxing infrastructure:
+
+```python
+from packages.sdk import runtime
+
+# 1. Attach your agent workload to instrument it
+runtime.attach(my_agent)
+
+# 2. Dispatch the proposed action through the CRI control plane
+result = runtime.execute({
+    "agent_id": "langgraph-agent-1",
+    "action_type": "shell",
+    "payload": {
+        "command": "pip install requests"
+    }
+})
+
+print(f"Action Allowed: {result['allowed']}")
+print(f"Execution Route: {result['route']}")
+print(f"Stdout: {result.get('execution_result', {}).get('stdout')}")
+```
+
+### Option 2: Using the HTTP REST API
+
+For agents built in other languages (Go, JavaScript/TypeScript, etc.), they can communicate directly with the Runtime Kernel API Gateway:
+
+```bash
+curl -X POST http://127.0.0.1:8001/actions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "external-agent",
+    "action_type": "shell",
+    "payload": {
+      "command": "echo hello_cri"
+    }
+  }'
+```
+
+When an action is submitted via the HTTP API, it will run through the complete normalization, risk engine classification, policy engine evaluation, sandbox routing, telemetry publishing, and verification pipeline automatically.
