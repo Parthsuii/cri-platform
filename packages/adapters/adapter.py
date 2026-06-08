@@ -25,3 +25,15 @@ class GenericAdapter:
             payload=payload,
             metadata=metadata
         )
+
+class LangGraphAdapter(GenericAdapter):
+    def normalize(self, action: dict[str, Any]) -> CRIAction:
+        res = super().normalize(action)
+        res.metadata["adapter"] = "langgraph"
+        return res
+
+class OpenAIAdapter(GenericAdapter):
+    def normalize(self, action: dict[str, Any]) -> CRIAction:
+        res = super().normalize(action)
+        res.metadata["adapter"] = "openai_agents"
+        return res
