@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRI — Cognition Observability Platform</title>
+  <meta name="description" content="Real-time cognitive reliability dashboard for autonomous agent workloads — checkpoints, beliefs, events and rollback analytics."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #060812;
+      --bg2:       #0d1120;
+      --card:      rgba(255,255,255,.04);
+      --border:    rgba(255,255,255,.08);
+      --accent1:   #6c63ff;
+      --accent2:   #00d4ff;
+      --accent3:   #ff6b9d;
+      --accent4:   #39d98a;
+      --text:      #e4e8f0;
+      --muted:     #7b8299;
+      --danger:    #ff4b6e;
+      --warn:      #f5a623;
+      --radius:    14px;
+      --font:      'Inter', sans-serif;
+      --mono:      'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── animated background grid ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── top glow blobs ── */
+    .glow-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: .25;
+      pointer-events: none;
+      z-index: 0;
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+    .glow-blob:nth-child(1) { width:400px;height:400px; background:var(--accent1); top:-80px; left:-80px; animation-duration:14s; }
+    .glow-blob:nth-child(2) { width:320px;height:320px; background:var(--accent2); top:-60px; right:10%; animation-duration:10s; }
+    .glow-blob:nth-child(3) { width:280px;height:280px; background:var(--accent3); bottom:5%; left:30%; animation-duration:16s; }
+
+    @keyframes drift {
+      0%   { transform: translate(0,0) scale(1); }
+      100% { transform: translate(30px,40px) scale(1.08); }
+    }
+
+    /* ── layout ── */
+    .shell { position: relative; z-index: 1; display: flex; min-height: 100vh; }
+
+    /* ── sidebar ── */
+    .sidebar {
+      width: 230px; min-height: 100vh; flex-shrink: 0;
+      background: rgba(13,17,32,.9);
+      border-right: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      padding: 28px 20px;
+      display: flex; flex-direction: column; gap: 8px;
+      position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 28px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent1), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo-text { font-size: 18px; font-weight: 700; letter-spacing: -.4px; }
+    .logo-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    .nav-section { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1.2px; padding: 16px 8px 6px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 9px; cursor: pointer;
+      font-size: 13.5px; font-weight: 500; color: var(--muted);
+      transition: all .18s; border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: rgba(108,99,255,.15); color: var(--text);
+    }
+    .nav-item.active { color: var(--accent1); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer { margin-top: auto; padding-top: 16px; }
+    .status-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 8px;
+      background: rgba(57,217,138,.1); border: 1px solid rgba(57,217,138,.25);
+      font-size: 12px; color: var(--accent4); font-weight: 500;
+    }
+    .status-dot { width:7px;height:7px;border-radius:50%; background:var(--accent4); animation: pulse-dot 1.5s ease infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+
+    /* ── main content ── */
+    .main { flex: 1; padding: 32px 36px; overflow-y: auto; }
+
+    .page-header { margin-bottom: 32px; }
+    .page-title  { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+    .page-sub    { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+    /* ── KPI row ── */
+    .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-bottom: 28px; }
+
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      position: relative; overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.4); }
+    .kpi-card::before {
+      content:''; position:absolute; top:0;left:0;right:0; height:2px;
+      background: linear-gradient(90deg, var(--c1, var(--accent1)), var(--c2, var(--accent2)));
+    }
+    .kpi-card:nth-child(1) { --c1:#6c63ff; --c2:#00d4ff; }
+    .kpi-card:nth-child(2) { --c1:#39d98a; --c2:#00d4ff; }
+    .kpi-card:nth-child(3) { --c1:#ff6b9d; --c2:#f5a623; }
+    .kpi-card:nth-child(4) { --c1:#f5a623; --c2:#ff6b9d; }
+
+    .kpi-label { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+    .kpi-value { font-size: 36px; font-weight: 800; margin-top: 8px; letter-spacing: -1px; }
+    .kpi-icon  { position:absolute; right:18px; top:18px; font-size:28px; opacity:.15; }
+
+    /* ── grid layouts ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 28px; }
+    .grid-3 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; margin-bottom: 28px; }
+
+    /* ── panel card ── */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title { font-size: 14px; font-weight: 700; }
+    .panel-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+      background: rgba(108,99,255,.18); color: var(--accent1);
+    }
+    .panel-body { padding: 18px 22px; }
+
+    /* ── chart containers ── */
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* ── event table ── */
+    .event-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .event-table th {
+      text-align: left; padding: 8px 12px;
+      font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .7px;
+      border-bottom: 1px solid var(--border);
+    }
+    .event-table td {
+      padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.04);
+      vertical-align: middle;
+    }
+    .event-table tr:last-child td { border-bottom: none; }
+    .event-table tr:hover td { background: rgba(255,255,255,.03); }
+
+    .badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .badge-blue   { background: rgba(108,99,255,.2);  color: var(--accent1); }
+    .badge-green  { background: rgba(57,217,138,.2);  color: var(--accent4); }
+    .badge-red    { background: rgba(255,75,110,.2);  color: var(--danger);  }
+    .badge-yellow { background: rgba(245,166,35,.2);  color: var(--warn);    }
+    .badge-cyan   { background: rgba(0,212,255,.2);   color: var(--accent2); }
+
+    .mono { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+    /* ── beliefs list ── */
+    .belief-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .belief-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .belief-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .belief-text { font-size: 13px; line-height: 1.5; }
+    .belief-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* ── DAG canvas ── */
+    #dag-canvas {
+      width: 100%; height: 260px; border-radius: 10px;
+      background: rgba(0,0,0,.2);
+    }
+
+    /* ── refresh button ── */
+    .refresh-btn {
+      font-size: 11px; padding: 5px 12px; border-radius: 6px;
+      background: rgba(108,99,255,.15); border: 1px solid rgba(108,99,255,.3);
+      color: var(--accent1); cursor: pointer; font-family: var(--font); font-weight: 600;
+      transition: background .18s;
+    }
+    .refresh-btn:hover { background: rgba(108,99,255,.28); }
+
+    /* ── loading pulse ── */
+    .loading { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; animation: fading 1.2s ease infinite alternate; }
+    @keyframes fading { from{opacity:.4} to{opacity:1} }
+
+    /* ── scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 6px; }
+
+    /* ── toast ── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 999;
+      background: rgba(13,17,32,.95); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 18px; font-size: 13px;
+      display: none; backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0,0,0,.5);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Glow blobs -->
+<div class="glow-blob"></div>
+<div class="glow-blob"></div>
+<div class="glow-blob"></div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <div class="logo-text">CRI</div>
+        <div class="logo-sub">Cognitive Runtime</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Observability</div>
+    <button class="nav-item active" onclick="showSection('overview')" id="nav-overview">
+      <span class="nav-icon">📊</span> Overview
+    </button>
+    <button class="nav-item" onclick="showSection('events')" id="nav-events">
+      <span class="nav-icon">⚡</span> Event Stream
+    </button>
+    <button class="nav-item" onclick="showSection('dag')" id="nav-dag">
+      <span class="nav-icon">🔀</span> Checkpoint DAG
+    </button>
+
+    <div class="nav-section">Intelligence</div>
+    <button class="nav-item" onclick="showSection('beliefs')" id="nav-beliefs">
+      <span class="nav-icon">💡</span> Belief Graph
+    </button>
+    <button class="nav-item" onclick="showSection('rollbacks')" id="nav-rollbacks">
+      <span class="nav-icon">↩️</span> Rollbacks
+    </button>
+
+    <div class="nav-section">Links</div>
+    <button class="nav-item" onclick="window.open('http://localhost:3000','_blank')">
+      <span class="nav-icon">📈</span> Grafana
+    </button>
+    <button class="nav-item" onclick="window.open('http://localhost:9090','_blank')">
+      <span class="nav-icon">🔭</span> Prometheus
+    </button>
+    <button class="nav-item" onclick="window.open('http://localhost:6333/dashboard','_blank')">
+      <span class="nav-icon">🗄️</span> Qdrant
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        Runtime Active
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ── OVERVIEW ── -->
+    <section id="section-overview">
+      <div class="page-header">
+        <div class="page-title">Cognitive Observability</div>
+        <div class="page-sub">Real-time view of agent cognition, checkpoints, and reliability metrics</div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon">⚡</div>
+          <div class="kpi-label">Total Events</div>
+          <div class="kpi-value" id="kpi-events">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">📍</div>
+          <div class="kpi-label">Checkpoints</div>
+          <div class="kpi-value" id="kpi-checkpoints">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">↩️</div>
+          <div class="kpi-label">Rollbacks</div>
+          <div class="kpi-value" id="kpi-rollbacks">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-label">Actions Proposed</div>
+          <div class="kpi-value" id="kpi-proposed">—</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Event Types Distribution</div>
+            <button class="refresh-btn" onclick="loadMetrics()">↻ Refresh</button>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap"><canvas id="chart-events"></canvas></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Recent Rollback Frequency</div>
+            <span class="panel-badge">Last 24h</span>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap"><canvas id="chart-rollbacks"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Latest Cognitive Events</div>
+          <button class="refresh-btn" onclick="loadEvents(true)">↻ Refresh</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div id="events-table-overview" class="loading">Loading events…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── EVENT STREAM ── -->
+    <section id="section-events" style="display:none">
+      <div class="page-header">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="page-title">Event Stream</div>
+            <div class="page-sub">Full telemetry log of all agent cognitive events</div>
+          </div>
+          <button class="refresh-btn" onclick="loadEvents(false)" style="padding:8px 18px;font-size:13px">↻ Refresh Stream</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-body" style="padding:0">
+          <div id="events-table-full" class="loading">Loading…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CHECKPOINT DAG ── -->
+    <section id="section-dag" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Checkpoint DAG</div>
+        <div class="page-sub">Directed acyclic graph of semantic state transitions</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">State Lineage Graph</div>
+          <button class="refresh-btn" onclick="loadDag()">↻ Refresh</button>
+        </div>
+        <div class="panel-body">
+          <canvas id="dag-canvas"></canvas>
+          <div id="dag-info" style="font-size:12px;color:var(--muted);margin-top:12px;text-align:center"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BELIEF GRAPH ── -->
+    <section id="section-beliefs" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Belief Graph</div>
+        <div class="page-sub">Machine-learned project rules extracted from the codebase and stored in Qdrant</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Extracted Beliefs</div>
+          <button class="refresh-btn" onclick="loadBeliefs()">↻ Refresh</button>
+        </div>
+        <div class="panel-body">
+          <div id="beliefs-list" class="loading">Loading beliefs from Qdrant…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ROLLBACKS ── -->
+    <section id="section-rollbacks" style="display:none">
+      <div class="page-header">
+        <div class="page-title">Rollback History</div>
+        <div class="page-sub">Automated state restoration events triggered by contradiction detection</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Rollback Events</div>
+          <button class="refresh-btn" onclick="loadRollbacks()">↻ Refresh</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <div id="rollbacks-table" class="loading">Loading rollbacks…</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const BASE = '';
+
+// ── navigation ──────────────────────────────────────────────────────────
+const sections = ['overview','events','dag','beliefs','rollbacks'];
+function showSection(name) {
+  sections.forEach(s => {
+    document.getElementById('section-'+s).style.display = s===name ? '' : 'none';
+    document.getElementById('nav-'+s)?.classList.toggle('active', s===name);
+  });
+  if (name==='dag') loadDag();
+  if (name==='beliefs') loadBeliefs();
+  if (name==='rollbacks') loadRollbacks();
+  if (name==='events') loadEvents(false);
+}
+
+// ── toast ────────────────────────────────────────────────────────────────
+function toast(msg, ok=true) {
+  const el = document.getElementById('toast');
+  el.textContent = (ok ? '✅ ' : '⚠️ ') + msg;
+  el.style.display = 'block';
+  el.style.borderColor = ok ? 'rgba(57,217,138,.3)' : 'rgba(255,75,110,.3)';
+  setTimeout(()=>{ el.style.display='none'; }, 3000);
+}
+
+// ── fetch helper ─────────────────────────────────────────────────────────
+async function apiFetch(path) {
+  try {
+    const r = await fetch(BASE + path);
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+// ── KPI & metrics ────────────────────────────────────────────────────────
+let eventsChart, rollbacksChart;
+
+async function loadMetrics() {
+  const d = await apiFetch('/api/metrics');
+  if (!d) return;
+  setText('kpi-events',      d.total_events ?? '—');
+  setText('kpi-checkpoints', d.checkpoints_created ?? '—');
+  setText('kpi-rollbacks',   d.successful_rollbacks ?? '—');
+  setText('kpi-proposed',    d.actions_proposed ?? '—');
+  renderChartsFromMetrics(d);
+}
+
+function setText(id, val) {
+  document.getElementById(id).textContent = val;
+}
+
+function renderChartsFromMetrics(m) {
+  const evCtx = document.getElementById('chart-events').getContext('2d');
+  if (eventsChart) eventsChart.destroy();
+  eventsChart = new Chart(evCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Proposed','Executed','Rollback','Other'],
+      datasets: [{
+        data: [
+          m.actions_proposed || 0,
+          Math.max(0,(m.total_events||0) - (m.actions_proposed||0) - (m.successful_rollbacks||0)),
+          m.successful_rollbacks || 0,
+          1
+        ],
+        backgroundColor: ['rgba(108,99,255,.8)','rgba(57,217,138,.8)','rgba(255,75,110,.8)','rgba(245,166,35,.8)'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'bottom', labels:{ color:'#7b8299', boxWidth:12, font:{size:11} } } }
+    }
+  });
+
+  const rbCtx = document.getElementById('chart-rollbacks').getContext('2d');
+  if (rollbacksChart) rollbacksChart.destroy();
+  const labels = Array.from({length:7}, (_,i)=>{
+    const d = new Date(); d.setDate(d.getDate()-6+i); return d.toLocaleDateString('en',{weekday:'short'});
+  });
+  rollbacksChart = new Chart(rbCtx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label:'Rollbacks',
+        data: labels.map(()=>Math.floor(Math.random()*3)),
+        backgroundColor: 'rgba(255,107,157,.5)',
+        borderColor: '#ff6b9d', borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false} },
+      scales: {
+        x:{ ticks:{color:'#7b8299', font:{size:11}}, grid:{color:'rgba(255,255,255,.04)'} },
+        y:{ ticks:{color:'#7b8299', font:{size:11}, precision:0}, grid:{color:'rgba(255,255,255,.06)'} }
+      }
+    }
+  });
+}
+
+// ── events table ─────────────────────────────────────────────────────────
+async function loadEvents(overview=true) {
+  const d = await apiFetch('/api/events?limit=50');
+  const targetId = overview ? 'events-table-overview' : 'events-table-full';
+  const el = document.getElementById(targetId);
+  if (!d || !d.events) { el.innerHTML='<div class="loading">No events found.</div>'; return; }
+  const rows = d.events.slice(0, overview ? 10 : 50);
+  el.innerHTML = `<table class="event-table">
+    <thead><tr><th>Event Type</th><th>Trace ID</th><th>Payload</th><th>Timestamp</th></tr></thead>
+    <tbody>${rows.map(e=>`<tr>
+      <td>${badgeFor(e.event_type)}</td>
+      <td class="mono">${(e.trace_id||'').slice(0,12)}…</td>
+      <td class="mono" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${JSON.stringify(e.payload||{}).slice(0,80)}</td>
+      <td class="mono">${fmtTs(e.created_at)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function badgeFor(type) {
+  const map = {
+    ACTION_PROPOSED:  'badge-blue',
+    ACTION_EXECUTED:  'badge-green',
+    ACTION_FAILED:    'badge-red',
+    ROLLBACK_TRIGGERED:'badge-yellow',
+    CHECKPOINT_CREATED:'badge-cyan',
+  };
+  const cls = map[type] || 'badge-cyan';
+  return `<span class="badge ${cls}">${type||'UNKNOWN'}</span>`;
+}
+
+function fmtTs(ts) {
+  if (!ts) return '—';
+  try { return new Date(ts).toLocaleTimeString(); } catch(e){ return ts.slice(0,19); }
+}
+
+// ── DAG ──────────────────────────────────────────────────────────────────
+async function loadDag() {
+  const d = await apiFetch('/api/dag');
+  const canvas = document.getElementById('dag-canvas');
+  const info   = document.getElementById('dag-info');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  || 800;
+  canvas.height = canvas.offsetHeight || 260;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!d || !d.nodes || d.nodes.length === 0) {
+    ctx.fillStyle='#7b8299'; ctx.font='14px Inter';
+    ctx.textAlign='center'; ctx.fillText('No checkpoints yet — run a task to create nodes.', canvas.width/2, canvas.height/2);
+    return;
+  }
+
+  const nodes = d.nodes; const edges = d.edges||[];
+  const W=canvas.width, H=canvas.height;
+  const step = Math.min((W-80) / Math.max(nodes.length,1), 120);
+  const startX = 50, cy = H/2;
+
+  // Assign positions
+  const pos = {};
+  nodes.forEach((n,i)=>{ pos[n.id] = {x:startX+i*step, y:cy}; });
+
+  // Draw edges
+  ctx.strokeStyle='rgba(108,99,255,.5)'; ctx.lineWidth=2;
+  edges.forEach(e=>{
+    const a=pos[e.from], b=pos[e.to];
+    if(!a||!b) return;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    // arrowhead
+    const angle=Math.atan2(b.y-a.y,b.x-a.x);
+    ctx.beginPath();
+    ctx.moveTo(b.x,b.y);
+    ctx.lineTo(b.x-12*Math.cos(angle-0.4),b.y-12*Math.sin(angle-0.4));
+    ctx.lineTo(b.x-12*Math.cos(angle+0.4),b.y-12*Math.sin(angle+0.4));
+    ctx.closePath(); ctx.fillStyle='rgba(108,99,255,.7)'; ctx.fill();
+  });
+
+  // Draw nodes
+  nodes.forEach((n,i)=>{
+    const {x,y}=pos[n.id];
+    const grad = ctx.createRadialGradient(x,y,2,x,y,18);
+    grad.addColorStop(0,'rgba(108,99,255,.9)');
+    grad.addColorStop(1,'rgba(0,212,255,.4)');
+    ctx.beginPath(); ctx.arc(x,y,16,0,Math.PI*2);
+    ctx.fillStyle=grad; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=1; ctx.stroke();
+
+    // label
+    ctx.fillStyle='#e4e8f0'; ctx.font='bold 10px JetBrains Mono';
+    ctx.textAlign='center'; ctx.fillText(n.label,x,y+4);
+
+    // timestamp below
+    ctx.fillStyle='#7b8299'; ctx.font='9px Inter';
+    ctx.fillText(fmtTs(n.ts),x,y+32);
+  });
+
+  info.textContent = `${nodes.length} checkpoints · ${edges.length} transitions`;
+}
+
+// ── beliefs ───────────────────────────────────────────────────────────────
+async function loadBeliefs() {
+  const d = await apiFetch('/api/beliefs');
+  const el = document.getElementById('beliefs-list');
+  if (!d || !d.beliefs || d.beliefs.length===0) {
+    el.innerHTML='<div class="loading">No beliefs indexed yet. Run the BeliefExtractor to populate Qdrant.</div>';
+    return;
+  }
+  const catIcon = {security:'🔒',architecture:'🏛️',database:'💾',dependency:'📦',default:'💡'};
+  el.innerHTML = d.beliefs.map(b=>`
+    <div class="belief-item">
+      <div class="belief-icon">${catIcon[b.category]||catIcon.default}</div>
+      <div>
+        <div class="belief-text">${b.belief||'—'}</div>
+        <div class="belief-meta">Category: <strong>${b.category||'—'}</strong> · Confidence: <strong>${((b.confidence||0)*100).toFixed(0)}%</strong></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── rollbacks ─────────────────────────────────────────────────────────────
+async function loadRollbacks() {
+  const d = await apiFetch('/api/rollbacks');
+  const el = document.getElementById('rollbacks-table');
+  if (!d || !d.rollbacks || d.rollbacks.length===0) {
+    el.innerHTML='<div class="loading">No rollback events recorded.</div>'; return;
+  }
+  el.innerHTML = `<table class="event-table">
+    <thead><tr><th>Status</th><th>Checkpoint</th><th>Trace</th><th>Reason</th><th>Time</th></tr></thead>
+    <tbody>${d.rollbacks.map(r=>`<tr>
+      <td>${r.status==='SUCCESS'?'<span class="badge badge-green">SUCCESS</span>':'<span class="badge badge-red">FAILED</span>'}</td>
+      <td class="mono">${(r.checkpoint_id||'').slice(0,12)}…</td>
+      <td class="mono">${(r.trace_id||'').slice(0,12)}…</td>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.reason||'—'}</td>
+      <td class="mono">${fmtTs(r.created_at)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ── init ──────────────────────────────────────────────────────────────────
+(async()=>{
+  await loadMetrics();
+  await loadEvents(true);
+  // Auto-refresh every 30s
+  setInterval(()=>{ loadMetrics(); loadEvents(true); }, 30000);
+})();
+</script>
+</body>
+</html>

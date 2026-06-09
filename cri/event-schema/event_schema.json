@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CRIEvent",
+  "type": "object",
+  "properties": {
+    "event_id": { "type": "string" },
+    "trace_id": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "event_type": { 
+      "type": "string",
+      "enum": ["ACTION_PROPOSED", "ACTION_EXECUTED", "ACTION_FAILED", "CHECKPOINT_CREATED", "ROLLBACK_TRIGGERED", "CONTRADICTION_DETECTED"]
+    },
+    "timestamp": { "type": "number" },
+    "payload": { "type": "object" },
+    "metadata": { "type": "object" }
+  },
+  "required": ["event_id", "trace_id", "agent_id", "event_type", "timestamp", "payload"]
+}

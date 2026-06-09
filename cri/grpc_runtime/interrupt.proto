@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package cri.grpc;
+
+service InterruptService {
+  rpc Pause (PauseRequest) returns (PauseResponse);
+  rpc Resume (ResumeRequest) returns (ResumeResponse);
+  rpc TriggerRollback (RollbackRequest) returns (RollbackResponse);
+}
+
+message PauseRequest {
+  string agent_id = 1;
+  string reason = 2;
+}
+
+message PauseResponse {
+  string status = 1; // "PAUSED", "ALREADY_PAUSED", "ERROR"
+  string message = 2;
+}
+
+message ResumeRequest {
+  string agent_id = 1;
+}
+
+message ResumeResponse {
+  string status = 1; // "RUNNING", "ERROR"
+  string message = 2;
+}
+
+message RollbackRequest {
+  string checkpoint_id = 1;
+  string agent_id = 2;
+}
+
+message RollbackResponse {
+  string status = 1; // "SUCCESS", "FAILED"
+  string message = 2;
+  repeated string restored_files = 3;
+}

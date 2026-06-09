@@ -1,1093 +1,518 @@
-# CRI Platform
+# CRI (Cognitive Reliability Infrastructure)
 
-# MASTER_BUILD_SPEC_V4.md
+# Master Build Specification v1.0
 
-## Cognition Runtime Infrastructure
+## Purpose
 
-### Infrastructure For Autonomous Systems
+This document is the single source of truth for building the complete CRI platform.
 
-Version: 4.0
-
-Status: Authoritative Build Specification
+A coding agent should be able to build the entire product by following this specification.
 
 ---
 
-# 1. Vision
+# PRODUCT DEFINITION
 
-CRI is the runtime operating layer for autonomous systems.
+CRI is a runtime reliability layer for autonomous coding agents.
 
-CRI is not:
+The system sits between:
 
-* Agent Framework
-* Workflow Engine
-* LLM Provider
-* Chat Platform
-* Prompt Framework
+```text
+Agent
+   ↓
+CRI Runtime
+   ↓
+Execution Environment
+```
 
 CRI provides:
 
-* Action Interception
-* Risk Classification
-* Sandbox Execution
-* Verification
-* Rollback
-* Telemetry
-* Governance
-* Observability
+* execution interception
+* semantic checkpointing
+* belief verification
+* contradiction detection
+* rollback orchestration
+* cognition telemetry
+* observability
+* reliability benchmarking
 
 ---
 
-# 2. Core Philosophy
-
-Current AI Architecture:
+# FINAL PRODUCT ARCHITECTURE
 
 ```text
-LLM
- ↓
-Agent
- ↓
-Production
+┌─────────────────────────────────────────┐
+│ Agent Runtime                           │
+│ LangGraph / OpenAI / Claude             │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│ Runtime Interceptor                     │
+│                                         │
+│ Action Classification                   │
+│ Risk Scoring                            │
+│ Sandbox Routing                         │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│ Semantic State Engine                   │
+│                                         │
+│ Snapshot Generator                      │
+│ State Hashing                           │
+│ Checkpoint DAG                          │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│ Verification Runtime                    │
+│                                         │
+│ Belief Retrieval                        │
+│ Contradiction Detection                 │
+│ Constraint Validation                   │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│ Recovery Runtime                        │
+│                                         │
+│ Rollback Engine                         │
+│ Context Restoration                     │
+│ Replanning                              │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│ Telemetry Platform                      │
+│                                         │
+│ Kafka                                   │
+│ OpenTelemetry                           │
+│ Event Storage                           │
+└─────────────────────────────────────────┘
 ```
-
-CRI Architecture:
-
-```text
-LLM
- ↓
-Agent
- ↓
-CRI Runtime
- ↓
-Production
-```
-
-CRI becomes the control plane between autonomous systems and the real world.
 
 ---
 
-# 3. Technology Stack
+# BUILD ORDER
 
-## Runtime
+The product MUST be built in this order.
 
-* Python 3.12
-* FastAPI
-* Pydantic v2
-* SQLAlchemy
+Attempting to build later phases first is forbidden.
 
-## Database
+---
 
-* PostgreSQL
+# PHASE 1
 
-## Event Streaming
+## Runtime Core
 
-* Apache Kafka
+Duration:
+2 weeks
 
-## Object Storage
+Objective:
+Gain deterministic control over agent execution.
 
-* MinIO
+Deliverables:
 
-## Vector Database
+* LangGraph agent
+* Runtime wrapper
+* Action interceptor
+* Risk classifier
+* Kafka producer
+* Docker sandbox
 
-* Qdrant
+Repositories:
 
-## Container Runtime
+```text
+agent-runtime/
+runtime-core/
+sandbox/
+```
 
-* Docker
+Completion Criteria:
 
-## Orchestration
+```text
+Agent action
+    ↓
+Intercepted
+    ↓
+Classified
+    ↓
+Sandboxed
+```
 
-* Kubernetes (later)
+---
 
-## Telemetry
+# PHASE 2
+
+## Cognitive Event Infrastructure
+
+Duration:
+1 week
+
+Objective:
+Convert cognition into events.
+
+Deliverables:
+
+* event schema
+* kafka topics
+* java ingestion service
+* postgres persistence
+
+Repositories:
+
+```text
+event-schema/
+java-ingestion/
+```
+
+Completion Criteria:
+
+Every agent action generates telemetry.
+
+---
+
+# PHASE 3
+
+## Semantic State Engine
+
+Duration:
+2 weeks
+
+Objective:
+Represent cognition as deterministic state.
+
+Deliverables:
+
+* snapshot generator
+* state hashing
+* checkpoint manager
+* checkpoint DAG
+
+Repositories:
+
+```text
+semantic-state/
+checkpoint-engine/
+```
+
+Data Model:
+
+```json
+{
+  "goal":"",
+  "plan":"",
+  "constraints":[],
+  "files":[],
+  "dependencies":[]
+}
+```
+
+Completion Criteria:
+
+Agent state recoverable from checkpoints.
+
+---
+
+# PHASE 4
+
+## Belief Infrastructure
+
+Duration:
+2 weeks
+
+Objective:
+Automatically learn project rules.
+
+Deliverables:
+
+* repository parser
+* belief extractor
+* belief graph
+* qdrant integration
+
+Repositories:
+
+```text
+belief-engine/
+repository-parser/
+```
+
+Input:
+
+```text
+Git Repository
+```
+
+Output:
+
+```json
+{
+  "belief":"Auth services use OAuth",
+  "confidence":0.92
+}
+```
+
+Completion Criteria:
+
+Repository converted into machine-readable beliefs.
+
+---
+
+# PHASE 5
+
+## Contradiction Router
+
+Duration:
+2 weeks
+
+Objective:
+Detect rule violations.
+
+Deliverables:
+
+* FastAPI verifier
+* contradiction scorer
+* belief retrieval layer
+
+Repositories:
+
+```text
+verification-runtime/
+router/
+```
+
+Completion Criteria:
+
+Mutation receives contradiction score.
+
+---
+
+# PHASE 6
+
+## Rollback Runtime
+
+Duration:
+2 weeks
+
+Objective:
+Recover from cognitive failures.
+
+Deliverables:
+
+* rollback coordinator
+* context replacement
+* checkpoint restore
+* gRPC interrupt service
+
+Repositories:
+
+```text
+rollback-engine/
+grpc-runtime/
+```
+
+Completion Criteria:
+
+Unsafe cognition automatically repaired.
+
+---
+
+# PHASE 7
+
+## Cognitive Observability
+
+Duration:
+2 weeks
+
+Objective:
+Visualize cognition.
+
+Deliverables:
 
 * OpenTelemetry
-* Prometheus
 * Grafana
+* DAG Viewer
+* Trace Viewer
 
----
-
-# 4. Model Layer (100% Free)
-
-## Reasoning
-
-Qwen 3 8B
-
-Purpose:
-
-* planning
-* tool usage
-* reasoning
-
----
-
-## Coding
-
-DeepSeek R1 Distill
-
-Purpose:
-
-* code generation
-* code modification
-
----
-
-## Embeddings
-
-BGE Large
-
-Purpose:
-
-* semantic search
-* state similarity
-* contradiction detection
-
----
-
-## Inference
-
-vLLM
-
-Purpose:
-
-Serve all models locally.
-
-No OpenAI.
-
-No Anthropic.
-
-No monthly costs.
-
----
-
-# 5. Final Architecture
+Repositories:
 
 ```text
-Developer
-    │
-    ▼
-
-CRI SDK
-
-    │
-    ▼
-
-API Gateway
-
-    │
-    ▼
-
-Runtime Kernel
-
-    │
-    ▼
-
-Adapter Layer
-
-    │
-    ▼
-
-Interceptor Engine
-
-    │
-    ▼
-
-Risk Engine
-
-    │
-    ▼
-
-Execution Router
-
- ┌───────────────┐
- │               │
-
- ▼               ▼
-
-Direct       Sandbox
-
- │               │
-
- └──────┬────────┘
-
-        ▼
-
-Verification
-
-        ▼
-
-Rollback
-
-        ▼
-
-Telemetry
-
-        ▼
-
-Kafka
-
-        ▼
-
-PostgreSQL
-
-Qdrant
-
-MinIO
-
-        ▼
-
-Dashboard
+observability/
+frontend/
 ```
+
+Completion Criteria:
+
+All reasoning paths observable.
 
 ---
 
-# 6. Repository Structure
+# PHASE 8
+
+## Cognitive Entropy Benchmark
+
+Duration:
+2 weeks
+
+Objective:
+Generate proof.
+
+Deliverables:
+
+* benchmark harness
+* task suite
+* metrics engine
+
+Repositories:
 
 ```text
-cri-platform/
-
-apps/
-
-services/
-
-packages/
-
-deployment/
-
-tests/
-
-docs/
+benchmark/
+ceb/
 ```
+
+Metrics:
+
+* success rate
+* hallucination rate
+* rollback frequency
+* contradiction frequency
+* recovery rate
+
+Completion Criteria:
+
+Reliability quantified.
 
 ---
 
-## Services
+# PHASE 9
+
+## Verification Runtime v2
+
+Objective:
+
+Replace LLM verification.
+
+Build:
+
+* DeBERTa
+* NLI classifier
+* contradiction model
+
+Completion Criteria:
+
+Local contradiction inference.
+
+---
+
+# PHASE 10
+
+## Memory Arbitration Layer
+
+Objective:
+
+Manage long-horizon cognition.
+
+Build:
+
+* episodic memory
+* semantic memory
+* arbitration engine
+
+Completion Criteria:
+
+Stable memory across sessions.
+
+---
+
+# PHASE 11
+
+## Context Governance Engine
+
+Objective:
+
+Prevent context collapse.
+
+Build:
+
+* context ranking
+* semantic compression
+* memory pruning
+
+Completion Criteria:
+
+100k+ token task stability.
+
+---
+
+# PHASE 12
+
+## Cognitive Operating System
+
+Objective:
+
+Become runtime layer for autonomous AI.
+
+Build:
+
+* distributed cognition
+* persistent beliefs
+* cognitive scheduler
+* uncertainty runtime
+* multi-agent coordination
+
+Completion Criteria:
+
+Production-grade cognition infrastructure.
+
+---
+
+# FINAL REPOSITORY STRUCTURE
 
 ```text
-api-gateway/
+cri/
 
-runtime-kernel/
-
-adapter-service/
-
-interceptor/
-
-risk-engine/
-
-telemetry/
-
-sandbox/
-
-verification/
-
-rollback/
-
-policy/
-
-state-engine/
-
-model-gateway/
-
-dashboard/
+├── agent-runtime/
+├── runtime-core/
+├── event-schema/
+├── java-ingestion/
+├── semantic-state/
+├── checkpoint-engine/
+├── belief-engine/
+├── verification-runtime/
+├── rollback-engine/
+├── grpc-runtime/
+├── observability/
+├── benchmark/
+├── dashboard/
+├── infra/
+└── docs/
 ```
 
 ---
 
-## Packages
+# DEFINITION OF DONE
+
+The product is complete when:
 
 ```text
-contracts/
-
-events/
-
-adapters/
-
-sdk/
-
-shared/
+Agent proposes unsafe action
+            ↓
+CRI intercepts
+            ↓
+Semantic checkpoint created
+            ↓
+Beliefs retrieved
+            ↓
+Contradiction detected
+            ↓
+Rollback triggered
+            ↓
+Checkpoint restored
+            ↓
+Agent replans
+            ↓
+Task succeeds
 ```
 
----
-
-# 7. Phase 1
-
-## Runtime Foundation
-
-Timeline:
-
-Week 1–2
-
-Goal:
-
-Receive actions.
-
----
-
-## Build
-
-### API Gateway
-
-Endpoints:
-
-POST /v1/actions
-
-GET /health
-
-GET /metrics
-
----
-
-### Runtime Kernel
-
-Responsibilities:
-
-* action orchestration
-* routing
-* lifecycle
-
----
-
-### Action Contract
-
-```python
-class CRIAction:
-
-    action_id: str
-
-    trace_id: str
-
-    agent_id: str
-
-    action_type: str
-
-    payload: dict
-
-    metadata: dict
-```
-
----
-
-### SDK
-
-```python
-runtime.attach(agent)
-
-runtime.execute(action)
-```
-
----
-
-## Checklist
-
-* [x] Runtime Kernel
-* [x] SDK
-* [x] Action Contract
-* [x] API Gateway
-
-Acceptance:
-
-Action successfully received.
-
----
-
-# 8. Phase 2
-
-## Adapter Layer
-
-Timeline:
-
-Week 2–3
-
-Goal:
-
-Integrate existing agents.
-
----
-
-### Adapters
-
-Generic
-
-LangGraph
-
-OpenAI Agents
-
-AutoGen
-
-OpenHands
-
-CrewAI
-
----
-
-### Adapter Interface
-
-```python
-class Adapter:
-
-    def normalize(
-        self,
-        action
-    ):
-        pass
-```
-
----
-
-## Checklist
-
-* [x] Generic Adapter
-* [x] LangGraph Adapter
-* [x] OpenAI Adapter
-
-Acceptance:
-
-External agents connected.
-
----
-
-# 9. Phase 3
-
-## Interceptor Engine
-
-Timeline:
-
-Week 3–5
-
-Goal:
-
-Nothing bypasses CRI.
-
----
-
-### Flow
-
-```text
-Action
- ↓
-Interceptor
- ↓
-Middleware
- ↓
-Risk
- ↓
-Router
-```
-
----
-
-### Middleware
-
-Auth
-
-Telemetry
-
-Policy
-
-Risk
-
----
-
-## Checklist
-
-* [x] Interceptor
-* [x] Middleware
-* [x] Router
-
-Acceptance:
-
-100% action interception.
-
----
-
-# 10. Phase 4
-
-## Risk Engine
-
-Timeline:
-
-Week 5–6
-
-Goal:
-
-Classify actions.
-
----
-
-### Risk Levels
-
-LOW
-
-MEDIUM
-
-HIGH
-
-CRITICAL
-
----
-
-### Rules
-
-```yaml
-deny:
-
-  - rm -rf
-
-  - DROP TABLE
-
-sandbox:
-
-  - pip install
-
-  - deployment
-```
-
----
-
-### Future
-
-Qwen-powered semantic risk analysis.
-
----
-
-## Checklist
-
-* [x] Rule Engine
-* [x] Classifier
-
-Acceptance:
-
-Risk classification operational.
-
----
-
-# 11. Phase 5
-
-## Telemetry Platform
-
-Timeline:
-
-Week 6–8
-
-Goal:
-
-Everything becomes telemetry.
-
----
-
-### Event Types
-
-ACTION_PROPOSED
-
-ACTION_EXECUTED
-
-ACTION_FAILED
-
-CHECKPOINT_CREATED
-
-ROLLBACK_TRIGGERED
-
-POLICY_VIOLATION
-
-STATE_UPDATED
-
----
-
-### Event Store
-
-PostgreSQL
-
-Tables:
-
-events
-
-actions
-
-traces
-
----
-
-## Checklist
-
-* [x] Event Factory
-* [x] Event Store
-* [x] Trace Engine
-
-Acceptance:
-
-Replay possible.
-
----
-
-# 12. Phase 6
-
-## Dashboard
-
-Timeline:
-
-Week 8–9
-
-Goal:
-
-Developer visibility.
-
----
-
-### Pages
-
-Runtime Explorer
-
-Trace Explorer
-
-Risk Explorer
-
-Rollback Explorer
-
----
-
-## Frontend
-
-Next.js
-
-Tailwind
-
-shadcn/ui
-
----
-
-## Checklist
-
-* [x] Runtime View
-* [x] Trace View
-
-Acceptance:
-
-Action history visible.
-
----
-
-# 13. Phase 7
-
-## Sandbox Platform
-
-Timeline:
-
-Week 9–11
-
-Goal:
-
-Safe execution.
-
----
-
-### Runtime
-
-Docker
-
----
-
-### Controls
-
-CPU
-
-Memory
-
-Filesystem
-
-Network
-
----
-
-### Router
-
-LOW
-
-Direct
-
-HIGH
-
-Sandbox
-
----
-
-## Checklist
-
-* [x] Sandbox Runtime
-* [x] Docker Executor
-
-Acceptance:
-
-High-risk actions isolated.
-
----
-
-# 14. Phase 8
-
-## Verification Platform
-
-Timeline:
-
-Week 11–12
-
-Goal:
-
-Validate outcomes.
-
----
-
-### Checks
-
-Build
-
-Tests
-
-Dependencies
-
-Artifacts
-
----
-
-### Results
-
-PASS
-
-FAIL
-
-RETRY
-
-ROLLBACK
-
----
-
-## Checklist
-
-* [x] Verification Service
-
-Acceptance:
-
-Execution verified.
-
----
-
-# 15. Phase 9
-
-## Rollback Platform
-
-Timeline:
-
-Week 12–14
-
-Goal:
-
-Recovery.
-
----
-
-### Components
-
-Checkpoint Manager
-
-Rollback Manager
-
----
-
-### Storage
-
-MinIO
-
-Snapshots
-
-Artifacts
-
----
-
-## Checklist
-
-* [x] Snapshot Service
-* [x] Rollback Service
-
-Acceptance:
-
-State restored.
-
----
-
-# 16. Phase 10
-
-## Kafka Backbone
-
-Timeline:
-
-Week 14–16
-
-Goal:
-
-Distributed runtime.
-
----
-
-### Topics
-
-runtime-events
-
-telemetry-events
-
-rollback-events
-
-verification-events
-
-policy-events
-
----
-
-## Checklist
-
-* [x] Kafka Cluster
-* [x] Producer SDK
-* [x] Consumer SDK
-
-Acceptance:
-
-Streaming operational.
-
----
-
-# 17. Phase 11
-
-## Policy Platform
-
-Timeline:
-
-Week 16–18
-
-Goal:
-
-Govern execution.
-
----
-
-### Actions
-
-ALLOW
-
-DENY
-
-SANDBOX
-
-APPROVAL_REQUIRED
-
----
-
-### Human Approval
-
-Agent
-
-↓
-
-Approval
-
-↓
-
-Human
-
-↓
-
-Execution
-
----
-
-## Checklist
-
-* [x] Policy Engine
-* [x] Approval Workflow
-
-Acceptance:
-
-Governance operational.
-
----
-
-# 18. Phase 12
-
-## State Engine
-
-Timeline:
-
-Month 6
-
-Goal:
-
-Track execution evolution.
-
----
-
-### Components
-
-State Snapshots
-
-State Hashing
-
-State Lineage
-
----
-
-### Storage
-
-Qdrant
-
----
-
-## Checklist
-
-* [x] State Service
-* [x] Hash Engine
-* [x] Lineage Engine
-
-Acceptance:
-
-State history available.
-
----
-
-# 19. Phase 13
-
-## Intelligence Layer
-
-Timeline:
-
-Month 8+
-
-Goal:
-
-Use models to improve runtime decisions.
-
----
-
-### Model Gateway
-
-Providers:
-
-Qwen
-
-DeepSeek
-
-Future Custom Models
-
----
-
-### Use Cases
-
-Risk Explanation
-
-Policy Explanation
-
-State Analysis
-
-Execution Summaries
-
----
-
-## Checklist
-
-* [x] Model Gateway
-* [x] Qwen Provider
-* [x] DeepSeek Provider
-
-Acceptance:
-
-Model-assisted runtime intelligence.
-
----
-
-# 20. Phase 14
-
-## Enterprise Platform
-
-Timeline:
-
-Month 8–12
-
----
-
-### Security
-
-RBAC
-
-SSO
-
-Audit Logs
-
-API Keys
-
----
-
-### Multi-Tenancy
-
-Tenant Isolation
-
-Resource Quotas
-
-Billing
-
----
-
-### Reliability
-
-Backups
-
-HA
-
-Disaster Recovery
-
----
-
-## Checklist
-
-* [x] RBAC
-* [x] Multi-Tenancy
-* [x] DR
-
-Acceptance:
-
-Enterprise-ready deployment.
-
----
-
-# Definition of Done
-
-A developer installs:
-
-```bash
-pip install cri-sdk
-```
-
-Then:
-
-```python
-runtime.attach(agent)
-```
-
-and instantly gains:
-
-* Action Interception
-* Risk Analysis
-* Telemetry
-* Dashboard Visibility
-* Sandboxing
-* Verification
-* Rollback
-* Policy Enforcement
-
-without changing how their agent works.
-
----
-
-# End State
-
-CRI becomes:
-
-* Kubernetes for Autonomous Systems
-* OpenTelemetry for Agent Execution
-* Control Plane for AI Agents
-* Runtime Operating Layer for Autonomous Systems
-
-Not another agent framework.
+while producing telemetry proving reliability improvements over baseline agents.
