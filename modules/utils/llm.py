@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar, cast
 from pydantic import BaseModel  # pyrefly: ignore [missing-import]
 
 T = TypeVar("T", bound=BaseModel)
@@ -43,31 +43,38 @@ def call_llm_structured(
             client = OpenAI(api_key=openai_key)
             model = "gpt-4o-mini"
             
-        full_messages = []
+        full_messages: list[dict[str, Any]] = []
         if system_prompt:
             full_messages.append({"role": "system", "content": system_prompt})
         full_messages.extend(messages)
         
+        # Cast messages to the OpenAI SDK's expected type.
+        # At runtime these are plain dicts with "role" and "content" keys,
+        # which the SDK accepts — the cast just satisfies the type checker.
+        typed_messages = cast(Any, full_messages)
+
         if not groq_key:
             # Standard OpenAI parsing
             completion = client.beta.chat.completions.parse(
                 model=model,
-                messages=full_messages,
+                messages=typed_messages,
                 response_format=response_model,
             )
             return completion.choices[0].message.parsed
         else:
             # Groq JSON mode logic
-            json_messages = list(full_messages)
-            json_messages.insert(0, {
-                "role": "system",
-                "content": f"You MUST respond ONLY with a raw JSON object matching the JSON Schema: {json.dumps(response_model.model_json_schema())}"
-            })
+            json_messages: list[dict[str, Any]] = [
+                {
+                    "role": "system",
+                    "content": f"You MUST respond ONLY with a raw JSON object matching the JSON Schema: {json.dumps(response_model.model_json_schema())}"
+                },
+                *full_messages,
+            ]
             
             completion = client.chat.completions.create(
                 model=model,
-                messages=json_messages,
-                response_format={"type": "json_object"},
+                messages=cast(Any, json_messages),
+                response_format=cast(Any, {"type": "json_object"}),
             )
             content = completion.choices[0].message.content
             if content:
