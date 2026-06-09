@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 import urllib.request
-import pytest
+import pytest  # type: ignore
 
 def http_post(url: str, data: dict) -> dict:
     req = urllib.request.Request(
@@ -14,12 +14,12 @@ def http_post(url: str, data: dict) -> dict:
         headers={"Content-Type": "application/json"},
         method="POST"
     )
-    with urllib.request.urlopen(req, timeout=5) as response:
+    with urllib.request.urlopen(req, timeout=15) as response:
         return json.loads(response.read().decode("utf-8"))
 
 def http_get(url: str) -> dict:
     req = urllib.request.Request(url, method="GET")
-    with urllib.request.urlopen(req, timeout=5) as response:
+    with urllib.request.urlopen(req, timeout=15) as response:
         return json.loads(response.read().decode("utf-8"))
 
 @pytest.fixture(scope="module", autouse=True)
@@ -48,7 +48,7 @@ def run_cri_platform():
             processes.append((proc, log_file))
         
         # Wait for services to be healthy
-        time.sleep(3.5)
+        time.sleep(6.0)
         yield
     finally:
         for proc, log_file in processes:

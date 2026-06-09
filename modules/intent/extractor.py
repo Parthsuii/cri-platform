@@ -13,25 +13,14 @@ class IntentResult(BaseModel):
 
 def extract_intent(prompt: str) -> IntentResult:
     """Extract structured intent from natural language prompt."""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            completion = client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a software architect requirements extractor. Extract the structured intent from the user's prompt."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format=IntentResult,
-            )
-            parsed = completion.choices[0].message.parsed
-            if parsed:
-                return parsed
-        except Exception:
-            # Fallback to rule-based extraction on error
-            pass
+    from modules.utils.llm import call_llm_structured
+    res = call_llm_structured(
+        messages=[{"role": "user", "content": prompt}],
+        response_model=IntentResult,
+        system_prompt="You are a software architect requirements extractor. Extract the structured intent from the user's prompt."
+    )
+    if res:
+        return res
 
     # Rule-based / Deterministic Extraction
     lowered = prompt.lower()

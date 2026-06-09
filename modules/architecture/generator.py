@@ -12,24 +12,14 @@ class ArchitectureResult(BaseModel):
 
 def generate_architecture(intent: IntentResult) -> ArchitectureResult:
     """Generate architecture specification from application intent."""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            completion = client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a software architect generator. Convert the requirements intent into a list of database entities, user roles, and high-level flows."},
-                    {"role": "user", "content": intent.model_dump_json()}
-                ],
-                response_format=ArchitectureResult,
-            )
-            parsed = completion.choices[0].message.parsed
-            if parsed:
-                return parsed
-        except Exception:
-            pass
+    from modules.utils.llm import call_llm_structured
+    res = call_llm_structured(
+        messages=[{"role": "user", "content": intent.model_dump_json()}],
+        response_model=ArchitectureResult,
+        system_prompt="You are a software architect generator. Convert the requirements intent into a list of database entities, user roles, and high-level flows. Crucial: Entity names MUST be singular, capitalized names (e.g. 'User', 'Contact', 'Order', 'Product'), and MUST NOT be pluralized (e.g., NOT 'Users', NOT 'Contacts')."
+    )
+    if res:
+        return res
 
     # Rule-based generation fallback
     roles = [role.capitalize() for role in intent.roles]

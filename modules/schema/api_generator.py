@@ -17,24 +17,14 @@ class ApiSchema(BaseModel):
 
 def generate_api(architecture: ArchitectureResult) -> ApiSchema:
     """Generate API schema containing routes, methods, and schemas."""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            completion = client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are an API router spec generator. Generate endpoints, methods, and request/response specifications matching the application architecture."},
-                    {"role": "user", "content": architecture.model_dump_json()}
-                ],
-                response_format=ApiSchema,
-            )
-            parsed = completion.choices[0].message.parsed
-            if parsed:
-                return parsed
-        except Exception:
-            pass
+    from modules.utils.llm import call_llm_structured
+    res = call_llm_structured(
+        messages=[{"role": "user", "content": architecture.model_dump_json()}],
+        response_model=ApiSchema,
+        system_prompt="You are an API router spec generator. Generate endpoints, methods, and request/response specifications matching the application architecture. Note: all values inside request_body and response_body dictionaries MUST be simple strings describing the type (e.g. 'string', 'int', 'float', 'array'), and MUST NOT be lists, dicts, or nested objects. Crucial: Endpoint paths for entities MUST be formatted exactly as '/api/<plural_lowercase_entity_name>' (e.g., '/api/users', '/api/contacts', '/api/orders', '/api/products'). Do NOT use custom descriptive paths like '/api/contact-management' or '/api/authentication'."
+    )
+    if res:
+        return res
 
     # Deterministic generation fallback
     endpoints = []

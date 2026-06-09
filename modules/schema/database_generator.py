@@ -22,24 +22,14 @@ class DatabaseSchema(BaseModel):
 
 def generate_database(architecture: ArchitectureResult) -> DatabaseSchema:
     """Generate database schema containing tables, fields, and relationships."""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            completion = client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a database schema compiler. Generate tables, field definitions, and foreign keys matching the application architecture."},
-                    {"role": "user", "content": architecture.model_dump_json()}
-                ],
-                response_format=DatabaseSchema,
-            )
-            parsed = completion.choices[0].message.parsed
-            if parsed:
-                return parsed
-        except Exception:
-            pass
+    from modules.utils.llm import call_llm_structured
+    res = call_llm_structured(
+        messages=[{"role": "user", "content": architecture.model_dump_json()}],
+        response_model=DatabaseSchema,
+        system_prompt="You are a database schema compiler. Generate tables, field definitions, and foreign keys matching the application architecture. Crucial: Table names MUST be lowercase and pluralized (e.g., 'users', 'contacts', 'orders')."
+    )
+    if res:
+        return res
 
     # Deterministic generation fallback
     tables = []

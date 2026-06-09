@@ -24,24 +24,14 @@ class AuthSchema(BaseModel):
 
 def generate_auth(architecture: ArchitectureResult) -> AuthSchema:
     """Generate authentication schema containing roles, permissions, and route guards."""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            completion = client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are an RBAC policy schema generator. Generate roles, specific resource permission rules, and route guards matching the application architecture."},
-                    {"role": "user", "content": architecture.model_dump_json()}
-                ],
-                response_format=AuthSchema,
-            )
-            parsed = completion.choices[0].message.parsed
-            if parsed:
-                return parsed
-        except Exception:
-            pass
+    from modules.utils.llm import call_llm_structured
+    res = call_llm_structured(
+        messages=[{"role": "user", "content": architecture.model_dump_json()}],
+        response_model=AuthSchema,
+        system_prompt="You are an RBAC policy schema generator. Generate roles, specific resource permission rules, and route guards matching the application architecture."
+    )
+    if res:
+        return res
 
     # Deterministic generation fallback
     roles = []

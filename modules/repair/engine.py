@@ -68,14 +68,15 @@ class RepairEngine:
                     action = "Added missing '/api/auth/login' endpoint to API schema"
             
             # 2. Handle missing database fields/columns referred by APIs
-            elif "does not correspond to a column in database table" in err.message:
+            elif "does not correspond to a column in database table" in err.message or "is not a column in database table" in err.message:
                 classification = "missing_column"
                 # Extract field name and table name
                 # "API request field 'x' does not correspond to a column in database table 'y'"
+                # or "API request field 'x' for path 'z' is not a column in database table 'y'"
                 parts = err.message.split("'")
                 if len(parts) >= 5:
                     field_name = parts[1]
-                    table_name = parts[3]
+                    table_name = parts[-2]
                     
                     # Find table and add field
                     for table in database.tables:

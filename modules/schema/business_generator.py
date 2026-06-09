@@ -24,24 +24,14 @@ class BusinessSchema(BaseModel):
 
 def generate_business_rules(architecture: ArchitectureResult) -> BusinessSchema:
     """Generate business rules schema including constraints and premium features gating."""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=api_key)
-            completion = client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a business rule specification generator. Generate premium tier restrictions and entity validation limits matching the application architecture."},
-                    {"role": "user", "content": architecture.model_dump_json()}
-                ],
-                response_format=BusinessSchema,
-            )
-            parsed = completion.choices[0].message.parsed
-            if parsed:
-                return parsed
-        except Exception:
-            pass
+    from modules.utils.llm import call_llm_structured
+    res = call_llm_structured(
+        messages=[{"role": "user", "content": architecture.model_dump_json()}],
+        response_model=BusinessSchema,
+        system_prompt="You are a business rule specification generator. Generate premium tier restrictions and entity validation limits matching the application architecture. Note: The 'value' field in ValidationConstraint MUST be a simple string (e.g. '6', '0.01'), and MUST NOT be a list, array, or dictionary."
+    )
+    if res:
+        return res
 
     # Deterministic generation fallback
     premium_gates = []
