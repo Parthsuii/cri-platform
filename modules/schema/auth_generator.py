@@ -54,10 +54,7 @@ def generate_auth(architecture: ArchitectureResult) -> AuthSchema:
 
         roles.append(RoleAuthSpec(name=role, permissions=permissions))
 
-    # General route protection guards
-    route_guards.append(RouteGuard(path="/dashboard", allowed_roles=["Admin", "User", "Customer", "Seller"]))
-    route_guards.append(RouteGuard(path="/admin", allowed_roles=["Admin"]))
-
+    # Entity-based route guards — only for entities that will have matching /api/<entity> endpoints
     for entity in architecture.entities:
         ent_lower = entity.lower()
         if ent_lower == "contact":

@@ -167,4 +167,12 @@ def generate_api(architecture: ArchitectureResult) -> ApiSchema:
                 )
             ])
 
-    return ApiSchema(endpoints=endpoints)
+    # Deduplicate by (method, path) to avoid duplicate route errors
+    seen_routes: set[tuple[str, str]] = set()
+    unique_endpoints: list[RouteSpec] = []
+    for ep in endpoints:
+        key = (ep.method, ep.path)
+        if key not in seen_routes:
+            seen_routes.add(key)
+            unique_endpoints.append(ep)
+    return ApiSchema(endpoints=unique_endpoints)
