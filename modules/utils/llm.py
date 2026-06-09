@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from typing import Type, TypeVar
-from pydantic import BaseModel
+from pydantic import BaseModel  # pyrefly: ignore [missing-import]
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -30,7 +30,7 @@ def call_llm_structured(
         return None
         
     try:
-        from openai import OpenAI
+        from openai import OpenAI  # pyrefly: ignore [missing-import]
         
         if groq_key:
             client = OpenAI(

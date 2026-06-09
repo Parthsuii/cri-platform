@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # ── Phase 3: Semantic State & DAG ──────────────────────────────────────────
 
 def test_state_hash_is_deterministic():
-    from cri.semantic_state.state import AgentState, semantic_state_hash
+    from cri.semantic_state.state import AgentState, semantic_state_hash  # pyrefly: ignore [missing-import]
     state = AgentState(current_goal="test", current_plan="plan A", constraints=["no delete"])
     h1 = semantic_state_hash(state)
     h2 = semantic_state_hash(state)
@@ -23,15 +23,15 @@ def test_state_hash_is_deterministic():
 
 
 def test_state_hash_changes_with_goal():
-    from cri.semantic_state.state import AgentState, semantic_state_hash
+    from cri.semantic_state.state import AgentState, semantic_state_hash  # pyrefly: ignore [missing-import]
     s1 = AgentState(current_goal="goal-A")
     s2 = AgentState(current_goal="goal-B")
     assert semantic_state_hash(s1) != semantic_state_hash(s2)
 
 
 def test_dag_create_and_restore():
-    from cri.checkpoint_engine.dag import CheckpointDAG
-    from cri.semantic_state.state import AgentState
+    from cri.checkpoint_engine.dag import CheckpointDAG  # pyrefly: ignore [missing-import]
+    from cri.semantic_state.state import AgentState  # pyrefly: ignore [missing-import]
     dag = CheckpointDAG()
     state = AgentState(current_goal="build feature X")
     node = dag.create_checkpoint(state)
@@ -42,8 +42,8 @@ def test_dag_create_and_restore():
 
 
 def test_dag_lineage():
-    from cri.checkpoint_engine.dag import CheckpointDAG
-    from cri.semantic_state.state import AgentState
+    from cri.checkpoint_engine.dag import CheckpointDAG  # pyrefly: ignore [missing-import]
+    from cri.semantic_state.state import AgentState  # pyrefly: ignore [missing-import]
     dag = CheckpointDAG()
     s1 = dag.create_checkpoint(AgentState(current_goal="step 1"))
     s2 = dag.create_checkpoint(AgentState(current_goal="step 2"))
@@ -56,7 +56,7 @@ def test_dag_lineage():
 
 def test_belief_store_embedding_fallback():
     """Verifies the BeliefStore fallback embeddings are consistent."""
-    from cri.belief_engine.store import BeliefStore
+    from cri.belief_engine.store import BeliefStore  # pyrefly: ignore [missing-import]
     store = BeliefStore()
     store.use_fallback_embeddings = True
     store.model = None
@@ -67,7 +67,7 @@ def test_belief_store_embedding_fallback():
 
 
 def test_belief_store_embedding_is_vector():
-    from cri.belief_engine.store import BeliefStore
+    from cri.belief_engine.store import BeliefStore  # pyrefly: ignore [missing-import]
     store = BeliefStore()
     store.use_fallback_embeddings = True
     store.model = None
@@ -79,7 +79,7 @@ def test_belief_store_embedding_is_vector():
 # ── Phase 5: NLI Contradiction Classifier ─────────────────────────────────
 
 def test_nli_heuristic_detects_rm():
-    from cri.verification_runtime.nli import NLIContradictionClassifier
+    from cri.verification_runtime.nli import NLIContradictionClassifier  # pyrefly: ignore [missing-import]
     clf = NLIContradictionClassifier()
     clf.use_fallback = True
     clf.classifier = None
@@ -91,7 +91,7 @@ def test_nli_heuristic_detects_rm():
 
 
 def test_nli_heuristic_passes_safe_action():
-    from cri.verification_runtime.nli import NLIContradictionClassifier
+    from cri.verification_runtime.nli import NLIContradictionClassifier  # pyrefly: ignore [missing-import]
     clf = NLIContradictionClassifier()
     clf.use_fallback = True
     clf.classifier = None
@@ -105,7 +105,7 @@ def test_nli_heuristic_passes_safe_action():
 # ── Phase 6: Rollback Coordinator ─────────────────────────────────────────
 
 def test_rollback_coordinator_backup_and_restore(tmp_path):
-    from cri.rollback_engine.coordinator import RollbackCoordinator
+    from cri.rollback_engine.coordinator import RollbackCoordinator  # pyrefly: ignore [missing-import]
     # Create a temp file to backup
     src = tmp_path / "test_file.py"
     src.write_text("x = 1", encoding="utf-8")
@@ -127,9 +127,9 @@ def test_rollback_coordinator_backup_and_restore(tmp_path):
 # ── Phase 10: Memory Arbitration ──────────────────────────────────────────
 
 def test_episodic_memory_record_and_retrieve(tmp_path, monkeypatch):
-    import cri.agent_runtime.memory as mem_mod
+    import cri.agent_runtime.memory as mem_mod  # pyrefly: ignore [missing-import]
     monkeypatch.setattr(mem_mod, "_MEMORY_FILE", tmp_path / "mem.jsonl")
-    from cri.agent_runtime.memory import EpisodicMemory
+    from cri.agent_runtime.memory import EpisodicMemory  # pyrefly: ignore [missing-import]
     mem = EpisodicMemory()
     mem.record("run echo hello", "success")
     mem.record("rm -rf /", "blocked")
@@ -139,7 +139,7 @@ def test_episodic_memory_record_and_retrieve(tmp_path, monkeypatch):
 
 
 def test_semantic_memory_retrieves_relevant_rule():
-    from cri.agent_runtime.memory import SemanticMemory
+    from cri.agent_runtime.memory import SemanticMemory  # pyrefly: ignore [missing-import]
     sm = SemanticMemory()
     results = sm.retrieve("sandbox execution for high risk commands")
     texts = [r["rule"] for r in results]
@@ -149,7 +149,7 @@ def test_semantic_memory_retrieves_relevant_rule():
 # ── Phase 11: Context Governance ──────────────────────────────────────────
 
 def test_context_governor_prunes_to_budget():
-    from cri.agent_runtime.governance import ContextGovernorEngine
+    from cri.agent_runtime.governance import ContextGovernorEngine  # pyrefly: ignore [missing-import]
     gov = ContextGovernorEngine(token_budget=50)
     items = [{"content": "word " * 30, "priority": 0.9, "tag": "high"},
              {"content": "word " * 30, "priority": 0.1, "tag": "low"}]
@@ -158,7 +158,7 @@ def test_context_governor_prunes_to_budget():
 
 
 def test_context_governor_stable_for_small_context():
-    from cri.agent_runtime.governance import ContextGovernorEngine
+    from cri.agent_runtime.governance import ContextGovernorEngine  # pyrefly: ignore [missing-import]
     gov = ContextGovernorEngine(token_budget=1000)
     items = [{"content": "Short item.", "priority": 0.8, "tag": "task"}]
     result = gov.govern(items)
@@ -168,19 +168,19 @@ def test_context_governor_stable_for_small_context():
 # ── Phase 1: Classifiers ──────────────────────────────────────────────────
 
 def test_classifier_flags_rm():
-    from cri.runtime_core.classifiers import classify_shell
+    from cri.runtime_core.classifiers import classify_shell  # pyrefly: ignore [missing-import]
     result = classify_shell("rm -rf /")
     assert result["risk"] == "HIGH"
 
 
 def test_classifier_passes_echo():
-    from cri.runtime_core.classifiers import classify_shell
+    from cri.runtime_core.classifiers import classify_shell  # pyrefly: ignore [missing-import]
     result = classify_shell("echo hello")
     assert result["risk"] == "LOW"
 
 
 def test_ast_classifier_flags_os_import():
-    from cri.runtime_core.classifiers import ActionClassifier
+    from cri.runtime_core.classifiers import ActionClassifier  # pyrefly: ignore [missing-import]
     clf = ActionClassifier()
     result = clf.classify("import os\nos.remove('/etc/passwd')")
     assert result["risk"] == "HIGH"

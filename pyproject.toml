@@ -5,12 +5,21 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cri-runtime"
 version = "0.1.0"
-description = "CRI Runtime Phase 1 MVP scaffold"
+description = "Cognition Reliability Infrastructure — Runtime Governance for Autonomous AI Agents"
 requires-python = ">=3.11"
 authors = [{ name = "PARTH" }]
 dependencies = [
     "fastapi>=0.100",
     "uvicorn>=0.20",
+    "pydantic>=2.0",
+    "openai>=1.0",
+    "psycopg2-binary>=2.9",
+    "grpcio>=1.50",
+    "grpcio-tools>=1.50",
+    "sentence-transformers>=2.0",
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp>=1.20",
 ]
 
 [project.scripts]
@@ -20,4 +29,21 @@ cri-runtime = "main:main"
 py-modules = ["main"]
 
 [tool.setuptools.packages.find]
-include = ["cri_runtime*"]
+include = ["cri_runtime*", "cri*", "modules*", "orchestrator*", "services*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.pyrefly]
+python_version = "3.13"
+python_interpreter = 'C:\Python313\python.exe'
+search_path = [
+    ".",
+    "C:\\Users\\PARTH\\AppData\\Roaming\\Python\\Python313\\site-packages",
+    "C:\\Python313\\Lib\\site-packages",
+]
+# Hyphenated package directories cannot be imported normally — we map them
+# via a runtime MetaPathFinder in cri/__init__.py. Pyrefly cannot follow this,
+# so we suppress module-not-found for these known aliases.
+ignore_errors_in_generated_code = true

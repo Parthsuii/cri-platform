@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field  # pyrefly: ignore [missing-import]
 from modules.architecture.generator import ArchitectureResult
 
 class PermissionSpec(BaseModel):
